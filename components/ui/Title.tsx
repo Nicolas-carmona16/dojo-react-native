@@ -9,6 +9,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     fontFamily: "SpaceMono-Regular",
-    color: "#3498db"
+    color: "#3498db",
+    textAlign: "center",
   },
 });

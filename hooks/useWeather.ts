@@ -1,4 +1,5 @@
 import axios from "axios";
+import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import { WEATHER_API_KEY, WEATHER_API_URL } from "../constants/config";
 
@@ -20,25 +21,37 @@ type ForecastItem = {
   description: string;
 };
 
-export default function useWeather(city: string) {
+export default function useWeather(
+  city: string | { lat: number; lon: number }
+) {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [forecast, setForecast] = useState<ForecastItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentCityName, setCurrentCityName] = useState("");
 
   useEffect(() => {
     const fetchWeather = async () => {
       try {
         setLoading(true);
 
-        const currentResponse = await axios.get(
-          `${WEATHER_API_URL}?q=${city}&units=metric&appid=${WEATHER_API_KEY}`
-        );
+        let urlParams = "";
+        if (typeof city === "string") {
+          urlParams = `q=${encodeURIComponent(city)}`;
+        } else {
+          urlParams = `lat=${city.lat}&lon=${city.lon}`;
+        }
 
-        const forecastResponse = await axios.get(
-          `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${WEATHER_API_KEY}`
-        );
+        const [currentResponse, forecastResponse] = await Promise.all([
+          axios.get(
+            `${WEATHER_API_URL}?${urlParams}&units=metric&appid=${WEATHER_API_KEY}`
+          ),
+          axios.get(
+            `https://api.openweathermap.org/data/2.5/forecast?${urlParams}&units=metric&appid=${WEATHER_API_KEY}`
+          ),
+        ]);
 
+        setCurrentCityName(currentResponse.data.name);
         setWeather({
           temp: Math.round(currentResponse.data.main.temp),
           description: currentResponse.data.weather[0].description,
@@ -46,14 +59,17 @@ export default function useWeather(city: string) {
           icon: currentResponse.data.weather[0].icon,
         });
 
-        const dailyForecast = processForecastData(forecastResponse.data.list);
-        setForecast(dailyForecast);
-
+        setForecast(processForecastData(forecastResponse.data.list));
         setError(null);
       } catch {
-        setError("Ciudad no encontrada. Intenta con otro nombre.");
+        setError(
+          typeof city === "string"
+            ? "Ciudad no encontrada. Intenta con otro nombre."
+            : "No se pudo obtener el clima para tu ubicación."
+        );
         setWeather(null);
         setForecast([]);
+        setCurrentCityName("");
       } finally {
         setLoading(false);
       }
@@ -62,7 +78,58 @@ export default function useWeather(city: string) {
     fetchWeather();
   }, [city]);
 
-  return { weather, forecast, loading, error };
+  return { weather, forecast, loading, error, cityName: currentCityName };
+}
+
+export function useCurrentLocation() {
+  const [location, setLocation] = useState<{ lat: number; lon: number } | null>(
+    null
+  );
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const getLocation = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (!isMounted) return;
+
+        if (status !== "granted") {
+          setErrorMsg("Permiso de ubicación denegado");
+          setLoading(false);
+          return;
+        }
+
+        const locationData = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.BestForNavigation,
+          timeInterval: 5000,
+        });
+
+        if (isMounted) {
+          setLocation({
+            lat: locationData.coords.latitude,
+            lon: locationData.coords.longitude,
+          });
+          setLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setErrorMsg("No se pudo obtener la ubicación");
+          setLoading(false);
+        }
+      }
+    };
+
+    getLocation();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  return { location, errorMsg, loading };
 }
 
 function processForecastData(list: any[]): ForecastItem[] {
@@ -86,12 +153,14 @@ function processForecastData(list: any[]): ForecastItem[] {
       });
     } else {
       const existing = forecastMap.get(date)!;
-      if (item.main.temp_min < existing.temp.min) {
-        existing.temp.min = Math.round(item.main.temp_min);
-      }
-      if (item.main.temp_max > existing.temp.max) {
-        existing.temp.max = Math.round(item.main.temp_max);
-      }
+      existing.temp.min = Math.min(
+        existing.temp.min,
+        Math.round(item.main.temp_min)
+      );
+      existing.temp.max = Math.max(
+        existing.temp.max,
+        Math.round(item.main.temp_max)
+      );
     }
   });
 

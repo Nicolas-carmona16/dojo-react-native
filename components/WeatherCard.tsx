@@ -13,6 +13,7 @@ type WeatherCardProps = {
   } | null;
   loading?: boolean;
   error?: string | null;
+  isCurrentLocation?: boolean;
 };
 
 export default function WeatherCard({
@@ -20,6 +21,7 @@ export default function WeatherCard({
   weather,
   loading = false,
   error = null,
+  isCurrentLocation = false,
 }: WeatherCardProps) {
   if (loading) {
     return (
@@ -41,7 +43,17 @@ export default function WeatherCard({
 
   return (
     <View style={[styles.card, globalStyles.shadow]}>
-      <Text style={styles.city}>{city}</Text>
+      <View style={styles.cityContainer}>
+        <Text style={styles.city}>{city}</Text>
+        {isCurrentLocation && (
+          <MaterialIcons
+            name="my-location"
+            size={16}
+            color={colors.primary}
+            style={styles.locationIcon}
+          />
+        )}
+      </View>
 
       {weather?.icon && <WeatherIcon code={weather.icon} size={80} />}
 
@@ -76,11 +88,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 10,
   },
+  cityContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 5,
+  },
   city: {
     fontSize: 20,
     fontWeight: "bold",
     color: colors.text,
-    marginBottom: 5,
+  },
+  locationIcon: {
+    marginLeft: 5,
   },
   temperature: {
     fontSize: 48,

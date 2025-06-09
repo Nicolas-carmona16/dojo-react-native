@@ -1,27 +1,59 @@
-import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useState } from "react";
+import { MaterialCommunityIcons, MaterialIcons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import {
   Keyboard,
   ScrollView,
   StyleSheet,
+  Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import ForecastCard from "../../components/ForecastCard";
 import Title from "../../components/ui/Title";
 import WeatherCard from "../../components/WeatherCard";
 import { colors } from "../../constants/theme";
-import useWeather from "../../hooks/useWeather";
+import useWeather, { useCurrentLocation } from "../../hooks/useWeather";
 
 export default function HomeScreen() {
-  const [city, setCity] = useState("Medellín");
   const [searchQuery, setSearchQuery] = useState("");
-  const { weather, forecast, loading, error } = useWeather(city);
+  const [weatherSource, setWeatherSource] = useState<
+    string | { lat: number; lon: number }
+  >("");
+
+  const { location, errorMsg, loading: locationLoading } = useCurrentLocation();
+
+  useEffect(() => {
+    if (location && !weatherSource) {
+      setWeatherSource(location);
+    }
+  }, [location, weatherSource]);
+
+  useEffect(() => {
+    if (errorMsg && !weatherSource) {
+      setWeatherSource("Medellín");
+    }
+  }, [errorMsg, weatherSource]);
+
+  const {
+    weather,
+    forecast,
+    loading: weatherLoading,
+    error,
+    cityName,
+  } = useWeather(weatherSource);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      setCity(searchQuery);
+      setWeatherSource(searchQuery);
       Keyboard.dismiss();
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    if (location) {
+      setWeatherSource(location);
+      setSearchQuery("");
     }
   };
 
@@ -42,23 +74,41 @@ export default function HomeScreen() {
           onSubmitEditing={handleSearch}
           returnKeyType="search"
         />
-        <MaterialCommunityIcons
-          name="magnify"
-          size={24}
-          color={colors.primary}
-          onPress={handleSearch}
-          style={styles.searchIcon}
-        />
+        <View style={styles.searchButtons}>
+          <TouchableOpacity onPress={handleSearch}>
+            <MaterialCommunityIcons
+              name="magnify"
+              size={24}
+              color={colors.primary}
+              style={styles.searchIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleUseCurrentLocation}>
+            <MaterialIcons
+              name="my-location"
+              size={24}
+              color={colors.primary}
+              style={styles.locationIcon}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
+      {errorMsg && <Text style={styles.locationError}>{errorMsg}</Text>}
+
       <WeatherCard
-        city={city}
+        city={
+          typeof weatherSource === "string"
+            ? weatherSource
+            : cityName || "Tu ubicación"
+        }
         weather={weather}
-        loading={loading}
+        loading={weatherLoading || locationLoading}
         error={error}
+        isCurrentLocation={typeof weatherSource !== "string"}
       />
 
-      {!loading && !error && forecast.length > 0 && (
+      {!weatherLoading && !locationLoading && !error && forecast.length > 0 && (
         <ForecastCard forecast={forecast} />
       )}
     </ScrollView>
@@ -68,8 +118,8 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: colors.cardBackground,
+    paddingTop: 20,
   },
   contentContainer: {
     padding: 20,
@@ -87,13 +137,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 25,
     paddingHorizontal: 20,
-    paddingRight: 50,
+    paddingRight: 70,
     width: "100%",
     fontSize: 16,
     backgroundColor: "white",
   },
-  searchIcon: {
+  searchButtons: {
+    flexDirection: "row",
     position: "absolute",
     right: 15,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  locationIcon: {},
+  locationError: {
+    color: "red",
+    textAlign: "center",
+    marginBottom: 10,
   },
 });
