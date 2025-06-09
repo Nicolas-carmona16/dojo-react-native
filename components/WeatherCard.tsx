@@ -1,22 +1,50 @@
-import { StyleSheet, Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { colors, globalStyles } from "../constants/theme";
 
 type WeatherCardProps = {
   city: string;
-  temperature?: number;
-  description?: string;
+  weather: {
+    temp: number;
+    description: string;
+    humidity: number;
+    icon: string;
+  } | null;
+  loading?: boolean;
+  error?: string | null;
 };
 
 export default function WeatherCard({
   city,
-  temperature = 21,
-  description = "Soleado",
+  weather,
+  loading = false,
+  error = null,
 }: WeatherCardProps) {
+  if (loading) {
+    return (
+      <View style={[styles.card, globalStyles.shadow]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.card, globalStyles.shadow]}>
+        <MaterialIcons name="error-outline" size={40} color="red" />
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.card, globalStyles.shadow]}>
       <Text style={styles.city}>{city}</Text>
-      <Text style={styles.temperature}>{temperature}°C</Text>
-      <Text style={styles.description}>{description}</Text>
+      <Text style={styles.temperature}>{weather?.temp}°C</Text>
+      <Text style={styles.description}>{weather?.description}</Text>
+      <View style={styles.details}>
+        <Text style={styles.detailText}>Humedad: {weather?.humidity}%</Text>
+      </View>
     </View>
   );
 }
@@ -44,6 +72,18 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 16,
+    color: "#666",
+  },
+  errorText: {
+    color: "red",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  details: {
+    marginTop: 15,
+  },
+  detailText: {
+    fontSize: 14,
     color: "#666",
   },
 });
