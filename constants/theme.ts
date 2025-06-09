@@ -5,6 +5,7 @@ export const colors = {
   background: "#f5f5f5",
   text: "#333",
   cardBackground: "#ffffff",
+  forecastCardBg: "#f8f9fa",
 };
 
 export const globalStyles = StyleSheet.create({

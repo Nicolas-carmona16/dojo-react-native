@@ -1,6 +1,13 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Keyboard, StyleSheet, TextInput, View } from "react-native";
+import {
+  Keyboard,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from "react-native";
+import ForecastCard from "../../components/ForecastCard";
 import Title from "../../components/ui/Title";
 import WeatherCard from "../../components/WeatherCard";
 import { colors } from "../../constants/theme";
@@ -9,7 +16,7 @@ import useWeather from "../../hooks/useWeather";
 export default function HomeScreen() {
   const [city, setCity] = useState("Medellín");
   const [searchQuery, setSearchQuery] = useState("");
-  const { weather, loading, error } = useWeather(city);
+  const { weather, forecast, loading, error } = useWeather(city);
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -19,7 +26,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       <Title>Clima App</Title>
 
       <View style={styles.searchContainer}>
@@ -47,7 +57,11 @@ export default function HomeScreen() {
         loading={loading}
         error={error}
       />
-    </View>
+
+      {!loading && !error && forecast.length > 0 && (
+        <ForecastCard forecast={forecast} />
+      )}
+    </ScrollView>
   );
 }
 
@@ -56,6 +70,9 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: colors.cardBackground,
+  },
+  contentContainer: {
+    padding: 20,
   },
   searchContainer: {
     flexDirection: "row",
