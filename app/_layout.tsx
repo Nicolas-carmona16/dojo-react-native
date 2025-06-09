@@ -1,11 +1,27 @@
-import { Stack } from "expo-router";
+import { useFonts } from "expo-font";
+import { Slot } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { View } from "react-native";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    "SpaceMono-Regular": require("../assets/fonts/SpaceMono-Regular.ttf"),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="screens/home" options={{ title: "Clima App" }} />
-      <Stack.Screen name="screens/details" options={{ title: "Detalles" }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Slot />
+    </View>
   );
 }

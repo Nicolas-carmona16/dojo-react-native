@@ -1,16 +1,24 @@
 import { StyleSheet, Text, View } from "react-native";
-import WeatherCard from "../../components/WeatherCard";
+import Title from "../../components/ui/Title";
 
 export default function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>App del Clima</Text>
-      <WeatherCard city="Bogotá" />
+      <Title>Dojo de React Native</Title>
+      <Text style={styles.subtitle}>Dojo Práctico</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20 },
-  title: { fontSize: 24, fontWeight: "bold" },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  subtitle: {
+    fontSize: 18,
+    marginTop: 10,
+  },
 });
